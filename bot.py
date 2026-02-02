@@ -3,21 +3,25 @@ from flask import Flask, request
 import telebot
 import google.generativeai as genai
 
-# 1. Считываем данные
+# Настройки
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_KEY = os.getenv("GEMINI_API_KEY")
 URL = os.getenv("RENDER_URL")
 
-# Настройка Gemini
+# Настройка ИИ - ИСПРАВЛЕНО НАЗВАНИЕ МОДЕЛИ
 genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+# Используем 'gemini-1.5-flash-latest' для обхода ошибки 404
+model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
+# Память сессий
+chats = {}
+
 @app.route("/")
 def home():
-    return "Диагностика запущена"
+    return "Diagnostic Fix Active"
 
 @app.route("/telegram", methods=["POST"])
 def telegram_webhook():
@@ -30,30 +34,27 @@ def telegram_webhook():
 
 @bot.message_handler(content_types=['text'])
 def chat(message):
-    print(f"Пришло сообщение: {message.text}") # Это увидим в логах Render
+    user_id = message.chat.id
     try:
-        # ШАГ 1: Проверка связи с ИИ
-        bot.send_chat_action(message.chat.id, 'typing')
+        # Инициализация чата, если его нет
+        if user_id not in chats:
+            chats[user_id] = model.start_chat(history=[])
+            # Первая системная команда
+            chats[user_id].send_message("Ты — дерзкий близнец. Хами и язви.")
+
+        # Пытаемся получить ответ
+        response = chats[user_id].send_message(message.text)
         
-        # ШАГ 2: Запрос к Gemini
-        # Мы не используем сессии пока, просто прямой запрос для теста
-        response = model.generate_content(f"Ты дерзкий близнец. Ответь на это: {message.text}")
-        
-        # ШАГ 3: Проверка ответа
         if response and response.text:
-            # Если всё ок, он пришлет ответ ИИ
             bot.reply_to(message, response.text)
         else:
-            bot.reply_to(message, "⚠️ ИИ прислал пустой ответ.")
+            bot.reply_to(message, "⚠️ Модель ответила пустотой. Попробуй другое слово.")
 
     except Exception as e:
-        # Если произойдет ЛЮБАЯ ошибка, бот напишет её тебе прямо в чат!
-        error_text = f"❌ ОШИБКА: {str(e)}"
-        print(error_text)
-        bot.reply_to(message, error_text)
+        # Выводим ошибку, чтобы видеть, если 404 сменится на что-то другое
+        bot.reply_to(message, f"❌ Ошибка связи с ИИ: {str(e)[:100]}")
 
 if __name__ == "__main__":
     bot.remove_webhook()
-    # Очищаем очередь старых сообщений
     bot.set_webhook(url=f"{URL}/telegram", drop_pending_updates=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
