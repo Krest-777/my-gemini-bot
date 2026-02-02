@@ -18,7 +18,7 @@ genai.configure(api_key=GOOGLE_API_KEY)
 model = genai.GenerativeModel(
     model_name='gemini-1.5-flash',
     generation_config={
-        "temperature": 1.2,
+        "temperature": 1.3,
         "top_p": 0.95,
     },
     system_instruction="Ты — токсичный, саркастичный близнец. Ты ненавидишь, когда тебе пишут одно и то же. Отвечай ВСЕГДА по-разному, коротко и обидно. Используй сарказм."
