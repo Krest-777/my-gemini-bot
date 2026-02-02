@@ -29,6 +29,6 @@ def handle_message(message):
         print(f"Ошибка: {e}")
         bot.reply_to(message, "Я в глубоком раздумье... Попробуй еще раз!")
 
-if name == '__main__':
+if __name__ == '__main__':
     print("Новый бот вышел на охоту...")
     bot.infinity_polling(skip_pending=True)
