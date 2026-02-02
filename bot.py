@@ -6,10 +6,10 @@ import google.generativeai as genai
 # ====================================
 # CONFIG (Данные берутся из настроек Render)
 # ====================================
-TELEGRAM_TOKEN = os.getenv("8283418346:AAEAjnXRqdhyetKeGBuinjocz9SfUKfNt_s")
-GEMINI_API_KEY = os.getenv("AIzaSyCJqyEL3Mm2XWyzsxQLkGIyUFPS1ezO2Vw")
-# URL твоего сервиса на Render (например, https://my-bot.onrender.com)
-RENDER_URL = os.getenv("https://my-gemini-bot-dlof.onrender.com") 
+# Забираем секретные ключи из настроек Render
+TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+RENDER_URL = os.getenv("RENDER_URL")
 
 genai.configure(api_key=GEMINI_API_KEY)
 
