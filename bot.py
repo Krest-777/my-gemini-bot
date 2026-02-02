@@ -61,7 +61,7 @@ def chat(message):
 # =========================
 # ЗАПУСК
 # =========================
-if name == "__main__":
+if __name__ == "__main__":
     # Запускаем Telegram-бота в отдельном потоке
     threading.Thread(
         target=lambda: bot.infinity_polling(skip_pending=True),
