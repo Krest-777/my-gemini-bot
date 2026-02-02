@@ -4,9 +4,8 @@ import telebot
 import google.generativeai as genai
 
 # ====================================
-# CONFIG (Данные берутся из настроек Render)
+# CONFIG
 # ====================================
-# Забираем секретные ключи из настроек Render
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 RENDER_URL = os.getenv("RENDER_URL")
@@ -59,25 +58,27 @@ def handle_video(message):
 @bot.message_handler(content_types=["text"])
 def chat(message):
     try:
+        # Пытаемся получить ответ от нейронки
         response = model.generate_content(message.text)
-        bot.reply_to(message, response.text)
-    except Exception:
+        if response and response.text:
+            bot.reply_to(message, response.text)
+        else:
+            bot.reply_to(message, "Я промолчал, потому что твой вопрос — скука.")
+    except Exception as e:
+        print(f"Ошибка Gemini: {e}") # Это появится в логах Render
         bot.reply_to(
             message,
-            "Даже я сломался от твоего сообщения."
+            "Даже я сломался от твоего сообщения. Ключи проверь, гений."
         )
 
 # ====================================
 # STARTUP
 # ====================================
-if __name__ == "__main__":
-    # ЖЁСТКО сбрасываем всё старое
+if name == "__main__":
+    # Установка вебхука
     bot.remove_webhook()
-    
-    # Ставим новый webhook
-    # Важно: URL должен заканчиваться на /telegram
     bot.set_webhook(url=f"{RENDER_URL}/telegram")
     
-    # Запускаем сервер
+    # Запуск сервера
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
