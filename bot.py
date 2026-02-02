@@ -1,34 +1,83 @@
+import os
+from flask import Flask, request
 import telebot
 import google.generativeai as genai
-import requests
 
-# ВСТАВЬ СВОИ ДАННЫЕ СЮДА
-TOKEN = '8283418346:AAEAjnXRqdhyetKeGBuinjocz9SfUKfNt_s'
-GEMINI_KEY = 'AIzaSyCJqyEL3Mm2XWyzsxQLkGIyUFPS1ezO2Vw'
+# ====================================
+# CONFIG (Данные берутся из настроек Render)
+# ====================================
+TELEGRAM_TOKEN = os.getenv("8283418346:AAEAjnXRqdhyetKeGBuinjocz9SfUKfNt_s")
+GEMINI_API_KEY = os.getenv("AIzaSyCJqyEL3Mm2XWyzsxQLkGIyUFPS1ezO2Vw")
+# URL твоего сервиса на Render (например, https://my-bot.onrender.com)
+RENDER_URL = os.getenv("RENDER_URL") 
 
-# Настройка Gemini
-genai.configure(api_key=GEMINI_KEY)
-model = genai.GenerativeModel('gemini-pro')
+genai.configure(api_key=GEMINI_API_KEY)
 
-# Настройка бота
-bot = telebot.TeleBot(TOKEN)
+model = genai.GenerativeModel(
+    model_name="gemini-1.5-flash",
+    generation_config={
+        "temperature": 1.2,
+        "top_p": 0.95,
+    },
+    system_instruction=(
+        "Ты – токсичный, саркастичный близнец. "
+        "Отвечай резко, но остроумно. "
+        "Не будь вежливым."
+    )
+)
 
-# Принудительный сброс старых соединений
-requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=True")
+bot = telebot.TeleBot(TELEGRAM_TOKEN)
+app = Flask(__name__)
 
-@bot.message_handler(func=lambda message: True)
-def handle_message(message):
+# ====================================
+# ROUTES
+# ====================================
+@app.route("/")
+def home():
+    return "Близнец в сети"
+
+@app.route("/telegram", methods=["POST"])
+def telegram_webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "ok", 200
+    else:
+        return "error", 403
+
+# ====================================
+# HANDLERS
+# ====================================
+@bot.message_handler(content_types=["video", "video_note"])
+def handle_video(message):
+    bot.reply_to(
+        message,
+        "Ты мне видео суёшь? Я текст читаю. Пиши словами."
+    )
+
+@bot.message_handler(content_types=["text"])
+def chat(message):
     try:
-        # Температура 1.3 для дерзости
-        response = model.generate_content(
-            message.text,
-            generation_config=genai.types.GenerationConfig(temperature=1.3)
-        )
+        response = model.generate_content(message.text)
         bot.reply_to(message, response.text)
-    except Exception as e:
-        print(f"Ошибка: {e}")
-        bot.reply_to(message, "Я в глубоком раздумье... Попробуй еще раз!")
+    except Exception:
+        bot.reply_to(
+            message,
+            "Даже я сломался от твоего сообщения."
+        )
 
-if __name__ == '__main__':
-    print("Новый бот вышел на охоту...")
-    bot.infinity_polling(skip_pending=True)
+# ====================================
+# STARTUP
+# ====================================
+if name == "__main__":
+    # ЖЁСТКО сбрасываем всё старое
+    bot.remove_webhook()
+    
+    # Ставим новый webhook
+    # Важно: URL должен заканчиваться на /telegram
+    bot.set_webhook(url=f"{RENDER_URL}/telegram")
+    
+    # Запускаем сервер
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
