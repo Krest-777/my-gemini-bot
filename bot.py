@@ -14,17 +14,8 @@ genai.configure(api_key=GEMINI_API_KEY)
 
 model = genai.GenerativeModel(
     model_name="gemini-1.5-flash",
-    generation_config={
-        "temperature": 1.2,
-        "top_p": 0.95,
-    },
-    system_instruction=(
-        "Ты – токсичный, саркастичный близнец. "
-        "Отвечай резко, но остроумно. "
-        "Не будь вежливым."
-    )
+    system_instruction="Ты – токсичный саркастичный близнец. Отвечай резко."
 )
-
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 app = Flask(__name__)
 
