@@ -2,32 +2,33 @@ import os
 from flask import Flask, request
 import telebot
 import google.generativeai as genai
-from collections import defaultdict, deque
+from collections import defaultdict
 
-# Конфигурация из Environment Variables
+# --- КОНФИГУРАЦИЯ ---
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 RENDER_URL = os.getenv("RENDER_URL")
 
-# Настройка ИИ с "эффектом хаоса"
 genai.configure(api_key=GEMINI_API_KEY)
+
+# Настройка модели с твоим "хаосом"
 model = genai.GenerativeModel(
     model_name="gemini-1.5-flash",
     generation_config={
-        "temperature": 1.2,  # Высокая креативность и дерзость
+        "temperature": 1.2,
         "top_p": 0.95,
     }
 )
 
-# Память (храним последние 6 реплик для контекста)
-chat_memory = defaultdict(lambda: deque(maxlen=6))
+# Хранилище чат-сессий для каждого пользователя
+chats = {}
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return "Близнец 2.0 (Франкфурт + Хаос) в сети!"
+    return "Близнец 3.0: Сессии + Промпт + Хаос активен!"
 
 @app.route("/telegram", methods=["POST"])
 def telegram_webhook():
@@ -38,44 +39,34 @@ def telegram_webhook():
         return "ok", 200
     return "error", 403
 
+# --- ГЛАВНЫЙ ОБРАБОТЧИК (ТВОЕ РАБОЧЕЕ РЕШЕНИЕ) ---
 @bot.message_handler(content_types=['text'])
 def chat(message):
     try:
         user_id = message.chat.id
         
-        # 1. Формируем контекст из старой памяти
-        context = "\n".join(chat_memory[user_id])
-        
-        # 2. ПРАВИЛЬНАЯ ЛОГИКА: Явный prompt без дублирования
-        prompt = f"""
-Ты — дерзкий, язвительный и высокомерный близнец пользователя. 
-Твоя задача: отвечать максимально остроумно и токсично. 
-Не повторяй свои старые шутки.
+        # Если сессии нет — создаем её с твоей инструкцией
+        if user_id not in chats:
+            chats[user_id] = model.start_chat(history=[])
+            # Задаем роль через системное сообщение
+            instruction = (
+                "Ты — дерзкий, саркастичный и язвительный близнец пользователя. "
+                "Отвечай кратко и остро. Твоя задача — высмеивать глупость. "
+                "Никакой вежливости, только чистый сарказм."
+            )
+            chats[user_id].send_message(instruction)
 
-История диалога для контекста:
-{context}
-
-Новое сообщение от этого кожаного мешка: {message.text}
-Твой ответ:
-"""
-        
-        # 3. Генерация ответа
-        response = model.generate_content(prompt)
+        # Отправляем сообщение в сессию (Gemini сам запомнит контекст)
+        response = chats[user_id].send_message(message.text)
         answer = response.text
-        
-        # 4. СОХРАНЯЕМ В ПАМЯТЬ ТОЛЬКО СЕЙЧАС (чтобы избежать зацикливания)
-        chat_memory[user_id].append(f"Пользователь: {message.text}")
-        chat_memory[user_id].append(f"Близнец: {answer}")
         
         bot.reply_to(message, answer)
         
     except Exception as e:
-        print(f"Ошибка генерации: {e}")
-        bot.reply_to(message, "Твой вопрос настолько тупой, что у меня закоротило память. Попробуй еще раз.")
+        print(f"Ошибка: {e}")
+        bot.reply_to(message, "Даже мои нейроны не выдержали этого кринжа. Попробуй еще раз.")
 
 if name == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url=f"{RENDER_URL}/telegram")
-    
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
