@@ -74,7 +74,7 @@ def chat(message):
 # ====================================
 # STARTUP
 # ====================================
-if name == "__main__":
+if __name__ == "__main__":
     # Установка вебхука
     bot.remove_webhook()
     bot.set_webhook(url=f"{RENDER_URL}/telegram")
