@@ -62,12 +62,7 @@ def chat(message):
 # ЗАПУСК
 # =========================
 if __name__ == "__main__":
-    # Запускаем Telegram-бота в отдельном потоке
-    threading.Thread(
-        target=lambda: bot.infinity_polling(skip_pending=True),
-        daemon=True
-    ).start()
-
-    # Flask нужен для хостинга (Render / Railway и т.п.)
+    # skip_pending=True заставит бота игнорировать старые сообщения при запуске
+    threading.Thread(target=lambda: bot.infinity_polling(skip_pending=True)).start()
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host='0.0.0.0', port=port)
