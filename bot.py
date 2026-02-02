@@ -66,7 +66,7 @@ def chat(message):
         print(f"Ошибка: {e}")
         bot.reply_to(message, "Даже мои нейроны не выдержали этого кринжа. Попробуй еще раз.")
 
-if name == "__main__":
+if __name__ == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url=f"{RENDER_URL}/telegram")
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
