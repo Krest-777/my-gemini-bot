@@ -8,7 +8,7 @@ import threading
 # КЛЮЧИ (ЗАМЕНИ ПОТОМ)
 # =========================
 GOOGLE_API_KEY = "AIzaSyCJqyEL3Mm2XWyzsxQLkGIyUFPS1ezO2Vw"
-TELEGRAM_TOKEN = "7970873259:AAHYoDCgeyCHq1KKB6DvDAK7cpX4ikjqukM"
+TELEGRAM_TOKEN = "7970873259:AAH80agt98WsmX-CQfnpllu5GSHNsC8mtM8"
 
 # =========================
 # НАСТРОЙКА GEMINI
