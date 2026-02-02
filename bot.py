@@ -1,68 +1,34 @@
 import telebot
 import google.generativeai as genai
-import os
-from flask import Flask
-import threading
+import requests
 
-# =========================
-# КЛЮЧИ (ЗАМЕНИ ПОТОМ)
-# =========================
-GOOGLE_API_KEY = "AIzaSyCJqyEL3Mm2XWyzsxQLkGIyUFPS1ezO2Vw"
-TELEGRAM_TOKEN = "7970873259:AAHyIbtddjoyMww27MfJ5Bj0IXjTnhM8xaU"
+# ВСТАВЬ СВОИ ДАННЫЕ СЮДА
+TOKEN = '8283418346:AAEAjnXRqdhyetKeGBuinjocz9SfUKfNt_s'
+GEMINI_KEY = 'AIzaSyCJqyEL3Mm2XWyzsxQLkGIyUFPS1ezO2Vw'
 
-# =========================
-# НАСТРОЙКА GEMINI
-# =========================
-genai.configure(api_key=GOOGLE_API_KEY)
+# Настройка Gemini
+genai.configure(api_key=GEMINI_KEY)
+model = genai.GenerativeModel('gemini-pro')
 
-model = genai.GenerativeModel(
-    model_name='gemini-1.5-flash',
-    generation_config={
-        "temperature": 1.3,
-        "top_p": 0.95,
-    },
-    system_instruction="Ты — токсичный, саркастичный близнец. Ты ненавидишь, когда тебе пишут одно и то же. Отвечай ВСЕГДА по-разному, коротко и обидно. Используй сарказм."
-)
+# Настройка бота
+bot = telebot.TeleBot(TOKEN)
 
-# =========================
-# TELEGRAM + FLASK
-# =========================
-bot = telebot.TeleBot(TELEGRAM_TOKEN)
-app = Flask(__name__)
+# Принудительный сброс старых соединений
+requests.get(f"https://api.telegram.org/bot{TOKEN}/deleteWebhook?drop_pending_updates=True")
 
-@app.route('/')
-def home():
-    return "Близнец в сети!"
-
-# =========================
-# ОБРАБОТКА ВИДЕО
-# =========================
-@bot.message_handler(content_types=['video', 'video_note'])
-def handle_video(message):
-    bot.reply_to(
-        message,
-        "Ты че мне видео суешь? Я че, по-твоему, телек? Пиши текстом, не беси меня!"
-    )
-
-# =========================
-# ОБРАБОТКА ТЕКСТА
-# =========================
-@bot.message_handler(content_types=['text'])
-def chat(message):
+@bot.message_handler(func=lambda message: True)
+def handle_message(message):
     try:
-        response = model.generate_content(message.text)
+        # Температура 1.3 для дерзости
+        response = model.generate_content(
+            message.text,
+            generation_config=genai.types.GenerationConfig(temperature=1.3)
+        )
         bot.reply_to(message, response.text)
     except Exception as e:
-        bot.reply_to(
-            message,
-            "Даже я сломался от твоих сообщений."
-        )
+        print(f"Ошибка: {e}")
+        bot.reply_to(message, "Я в глубоком раздумье... Попробуй еще раз!")
 
-# =========================
-# ЗАПУСК
-# =========================
-if __name__ == "__main__":
-    # skip_pending=True заставит бота игнорировать старые сообщения при запуске
-    threading.Thread(target=lambda: bot.infinity_polling(skip_pending=True)).start()
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+if name == '__main__':
+    print("Новый бот вышел на охоту...")
+    bot.infinity_polling(skip_pending=True)
