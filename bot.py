@@ -80,7 +80,7 @@ def chat(message):
         print(f"Ошибка: {e}")
         bot.reply_to(message, "У меня нейроны заплелись от твоей тупости.")
 
-if name == "__main__":
+if __name__ == "__main__":
     bot.remove_webhook()
     # Убедись, что в Render переменная RENDER_URL без слэша в конце!
     bot.set_webhook(url=f"{RENDER_URL}/telegram")
