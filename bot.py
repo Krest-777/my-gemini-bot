@@ -24,6 +24,8 @@ def chat(message):
         bot.reply_to(message, f"Error: {str(e)}")
 
 if name == "__main__":
+    # Запуск бота
     threading.Thread(target=lambda: bot.infinity_polling()).start()
+    # Запуск веб-сервера
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
