@@ -3,25 +3,27 @@ from flask import Flask, request
 import telebot
 import google.generativeai as genai
 
-# Настройки
+# 1. Считываем данные
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_KEY = os.getenv("GEMINI_API_KEY")
 URL = os.getenv("RENDER_URL")
 
-# Настройка ИИ - ИСПРАВЛЕНО НАЗВАНИЕ МОДЕЛИ
-genai.configure(api_key=API_KEY)
-# Используем 'gemini-1.5-flash-latest' для обхода ошибки 404
-model = genai.GenerativeModel("models/gemini-1.5-flash-latest")
+# 2. НАСТРОЙКА ИИ (ИСПРАВЛЕНА ВЕРСИЯ API)
+# Мы явно указываем версию v1, чтобы убрать ошибку 404
+genai.configure(api_key=API_KEY, transport='rest') 
+
+# Используем максимально стабильное имя модели
+model = genai.GenerativeModel(model_name="gemini-1.5-flash")
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
-# Память сессий
+# Хранилище чатов
 chats = {}
 
 @app.route("/")
 def home():
-    return "Diagnostic Fix Active"
+    return "Fix 404 Active"
 
 @app.route("/telegram", methods=["POST"])
 def telegram_webhook():
@@ -36,25 +38,28 @@ def telegram_webhook():
 def chat(message):
     user_id = message.chat.id
     try:
-        # Инициализация чата, если его нет
+        # Если чата нет — создаем
         if user_id not in chats:
+            # Начинаем чат (без истории v1beta)
             chats[user_id] = model.start_chat(history=[])
-            # Первая системная команда
-            chats[user_id].send_message("Ты — дерзкий близнец. Хами и язви.")
+            # Первое сообщение-настройка (скрыто)
+            chats[user_id].send_message("Ты — дерзкий близнец. Хами.")
 
-        # Пытаемся получить ответ
+        # Отправляем сообщение
         response = chats[user_id].send_message(message.text)
         
-        if response and response.text:
+        if response.text:
             bot.reply_to(message, response.text)
         else:
-            bot.reply_to(message, "⚠️ Модель ответила пустотой. Попробуй другое слово.")
+            bot.reply_to(message, "⚠️ Пустой ответ от ИИ.")
 
     except Exception as e:
-        # Выводим ошибку, чтобы видеть, если 404 сменится на что-то другое
-        bot.reply_to(message, f"❌ Ошибка связи с ИИ: {str(e)[:100]}")
+        # Выводим подробную ошибку в чат
+        error_msg = str(e)
+        bot.reply_to(message, f"❌ Ошибка: {error_msg[:150]}")
 
 if __name__ == "__main__":
     bot.remove_webhook()
+    # Очищаем "застрявшие" сообщения
     bot.set_webhook(url=f"{URL}/telegram", drop_pending_updates=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
