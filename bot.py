@@ -49,7 +49,7 @@ def chat(message):
     except Exception as e:
         bot.reply_to(message, f"❌ Ошибка: {str(e)[:100]}")
 
-if name == "__main__":
+if __name__ == "__main__":
     bot.remove_webhook()
     bot.set_webhook(url=f"{URL}/telegram", drop_pending_updates=True)
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
