@@ -1,44 +1,59 @@
 import os
-import time
 from flask import Flask, request
 import telebot
-import google.generativeai as genai
+from google import genai # Используем новый пакет, как просит Render
 
-# Настройки
+# 1. Настройки
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_KEY = os.getenv("GEMINI_API_KEY")
 URL = os.getenv("RENDER_URL")
 
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel("gemini-1.5-flash")
+# 2. Инициализация нового клиента Gemini
+client = genai.Client(api_key=API_KEY)
+MODEL_ID = "gemini-1.5-flash"
 
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
 @app.route("/")
 def home():
-    return f"Server time: {time.ctime()}"
+    return "Новый движок 2026 активен"
 
+@app.route("/telegram", methods=["POST"])
+def telegram_webhook():
+    if request.headers.get('content-type') == 'application/json':
+        json_string = request.get_data().decode('utf-8')
+        update = telebot.types.Update.de_json(json_string)
+        bot.process_new_updates([update])
+        return "ok", 200
+    return "error", 403
+
+# 3. Единственный обработчик (БЕЗ ЭХО-ПОВТОРА)
 @bot.message_handler(content_types=['text'])
 def chat(message):
     try:
-        # Диагностическая метка: мы сразу увидим, новый это код или старый
-        print(f"DEBUG: Обработка сообщения {message.text}")
+        # Инструкция для твоего дерзкого близнеца
+        instruction = "Ты — дерзкий, саркастичный близнец пользователя. Отвечай кратко и язвительно."
         
-        # Прямой запрос к ИИ
-        response = model.generate_content(f"Ответь дерзко: {message.text}")
+        # Запрос к ИИ через новый метод
+        response = client.models.generate_content(
+            model=MODEL_ID,
+            contents=f"{instruction}\n\nПользователь: {message.text}"
+        )
         
-        if response and response.text:
+        if response.text:
             bot.reply_to(message, response.text)
         else:
-            bot.reply_to(message, "⚠️ ИИ выдал пустой ответ (чекни ключи).")
-            
+            bot.reply_to(message, "⚠️ ИИ промолчал. Проверь ключи.")
+
     except Exception as e:
-        # Если снова 404, бот напишет это ПРЯМО СЕЙЧАС
-        bot.reply_to(message, f"❌ ОШИБКА: {str(e)[:100]}")
+        # Выводим ошибку прямо в чат, чтобы сразу видеть причину
+        bot.reply_to(message, f"❌ Ошибка API: {str(e)[:150]}")
 
 if __name__ == "__main__":
     bot.remove_webhook()
-    # Чистим очередь сообщений!
+    # Сброс очереди уберет эффект "попугая" для старых сообщений
     bot.set_webhook(url=f"{URL}/telegram", drop_pending_updates=True)
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
