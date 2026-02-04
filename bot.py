@@ -3,8 +3,8 @@ import telebot
 from groq import Groq
 
 # Получаем ключи из переменных окружения
-TOKEN = os.getenv("TELEGRAM_TOKEN")
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+TOKEN = os.getenv("8283418346:AAEAjnXRqdhyetKeGBuinjocz9SfUKfNt_s")
+GROQ_API_KEY = os.getenv("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")
 
 # Инициализация бота и Groq-клиента
 bot = telebot.TeleBot(TOKEN)
