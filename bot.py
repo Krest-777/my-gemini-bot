@@ -1,23 +1,18 @@
 import os
 from flask import Flask, request
 import telebot
-from google import genai # Используем новый пакет, как просит Render
+from google import genai
 
-# 1. Настройки
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_KEY = os.getenv("GEMINI_API_KEY")
 URL = os.getenv("RENDER_URL")
 
-# 2. Инициализация нового клиента Gemini
 client = genai.Client(api_key=API_KEY)
-MODEL_ID = "gemini-1.5-flash"
-
 bot = telebot.TeleBot(TOKEN)
 app = Flask(__name__)
 
 @app.route("/")
-def home():
-    return "Новый движок 2026 активен"
+def home(): return "OK"
 
 @app.route("/telegram", methods=["POST"])
 def telegram_webhook():
@@ -28,32 +23,21 @@ def telegram_webhook():
         return "ok", 200
     return "error", 403
 
-# 3. Единственный обработчик (БЕЗ ЭХО-ПОВТОРА)
 @bot.message_handler(content_types=['text'])
 def chat(message):
     try:
-        # Инструкция для твоего дерзкого близнеца
-        instruction = "Ты — дерзкий, саркастичный близнец пользователя. Отвечай кратко и язвительно."
-        
-        # Запрос к ИИ через новый метод
+        # ПРОВЕРКА: Если бот повторит это, значит ИИ живой
         response = client.models.generate_content(
-            model=MODEL_ID,
-            contents=f"{instruction}\n\nПользователь: {message.text}"
+            model="gemini-1.5-flash",
+            contents=f"Ты дерзкий близнец. Ответь на: {message.text}"
         )
-        
-        if response.text:
-            bot.reply_to(message, response.text)
-        else:
-            bot.reply_to(message, "⚠️ ИИ промолчал. Проверь ключи.")
-
+        # Бот ОТВЕЧАЕТ текстом от ИИ + добавляет метку версии
+        bot.reply_to(message, f"[V2 Active]: {response.text}")
     except Exception as e:
-        # Выводим ошибку прямо в чат, чтобы сразу видеть причину
-        bot.reply_to(message, f"❌ Ошибка API: {str(e)[:150]}")
+        bot.reply_to(message, f"Ошибка: {str(e)[:50]}")
 
 if __name__ == "__main__":
     bot.remove_webhook()
-    # Сброс очереди уберет эффект "попугая" для старых сообщений
+    # drop_pending_updates=True — это КЛЮЧ к успеху
     bot.set_webhook(url=f"{URL}/telegram", drop_pending_updates=True)
-    
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
