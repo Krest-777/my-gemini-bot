@@ -2,37 +2,34 @@ import os
 import telebot
 from google import genai
 
-# Только два ключа. Больше ничего не нужно!
+# Берем только два ключа. RENDER_URL больше НЕ НУЖЕН.
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Инициализация ИИ
+# Инициализация
 client = genai.Client(api_key=API_KEY)
 bot = telebot.TeleBot(TOKEN)
 
-print("Бот запущен в режиме Polling...")
-
 @bot.message_handler(content_types=['text'])
-def handle_text(message):
+def handle_message(message):
     try:
-        # Прямой запрос к Gemini
-        prompt = f"Ты мой дерзкий близнец. Хами и язви. Ответь коротко: {message.text}"
-        
+        # Прямой запрос к ИИ
         response = client.models.generate_content(
             model="gemini-1.5-flash",
-            contents=prompt
+            contents=f"Ты — мой дерзкий и саркастичный близнец. Хами. Ответь на: {message.text}"
         )
         
-        # Отправляем только то, что придумал ИИ
         if response.text:
-            bot.send_message(message.chat.id, response.text)
+            bot.reply_to(message, response.text)
         else:
-            bot.send_message(message.chat.id, "Даже у меня нет слов на твой бред.")
+            bot.reply_to(message, "Я промолчу, это слишком тупо.")
             
     except Exception as e:
-        bot.send_message(message.chat.id, f"Ошибка API: {str(e)[:50]}")
+        bot.reply_to(message, f"Ошибка: {str(e)[:50]}")
 
-# Запуск бесконечного опроса (убивает старые вебхуки автоматически)
 if __name__ == "__main__":
+    print("Бот запущен в режиме Long Polling...")
+    # Убиваем старые вебхуки, чтобы они не мешали
     bot.remove_webhook()
+    # Запускаем бесконечный опрос
     bot.infinity_polling(skip_pending_updates=True)
