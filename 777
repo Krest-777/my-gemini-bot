@@ -3,7 +3,7 @@ from openai import OpenAI
 
 # ------------------ Вставь свои ключи ------------------
 TELEGRAM_TOKEN = "8119152091:AAHPdYRULtMEecoJ-TirL9BdgGKHVMobXVA"
-OPENAI_API_KEY = "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"
+OPENAI_API_KEY = "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"
 # -------------------------------------------------------
 
 bot = telebot.TeleBot(TELEGRAM_TOKEN)
